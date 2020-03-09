@@ -1,0 +1,193 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2020-03-06T20:29:47Z"
+  generateName: bala-concourse-postgresql-
+  labels:
+    app: postgresql
+    chart: postgresql-5.3.8
+    controller-revision-hash: bala-concourse-postgresql-6495f867bf
+    heritage: Helm
+    release: bala-concourse
+    role: master
+    statefulset.kubernetes.io/pod-name: bala-concourse-postgresql-0
+  name: bala-concourse-postgresql-0
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: bala-concourse-postgresql
+    uid: 38c35546-5fe9-11ea-b157-42010a80011d
+  resourceVersion: "13531"
+  selfLink: /api/v1/namespaces/default/pods/bala-concourse-postgresql-0
+  uid: 38d96bc7-5fe9-11ea-b157-42010a80011d
+spec:
+  containers:
+  - env:
+    - name: BITNAMI_DEBUG
+      value: "false"
+    - name: POSTGRESQL_PORT_NUMBER
+      value: "5432"
+    - name: PGDATA
+      value: /bitnami/postgresql/data
+    - name: POSTGRES_USER
+      value: concourse
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          key: postgresql-password
+          name: bala-concourse-postgresql
+    - name: POSTGRES_DB
+      value: concourse
+    image: docker.io/bitnami/postgresql:11.3.0-debian-9-r38
+    imagePullPolicy: IfNotPresent
+    livenessProbe:
+      exec:
+        command:
+        - sh
+        - -c
+        - exec pg_isready -U "concourse" -d "concourse" -h 127.0.0.1 -p 5432
+      failureThreshold: 6
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    name: bala-concourse-postgresql
+    ports:
+    - containerPort: 5432
+      name: postgresql
+      protocol: TCP
+    readinessProbe:
+      exec:
+        command:
+        - sh
+        - -c
+        - |
+          pg_isready -U "concourse" -d "concourse" -h 127.0.0.1 -p 5432
+          [ -f /opt/bitnami/postgresql/tmp/.initialized ]
+      failureThreshold: 6
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    securityContext:
+      runAsUser: 1001
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /bitnami/postgresql
+      name: data
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-s5hvq
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  hostname: bala-concourse-postgresql-0
+  initContainers:
+  - command:
+    - sh
+    - -c
+    - |
+      mkdir -p /bitnami/postgresql/data
+      chmod 700 /bitnami/postgresql/data
+      find /bitnami/postgresql -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | \
+        xargs chown -R 1001:1001
+    image: docker.io/bitnami/minideb:latest
+    imagePullPolicy: Always
+    name: init-chmod-data
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    securityContext:
+      runAsUser: 0
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /bitnami/postgresql
+      name: data
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-s5hvq
+      readOnly: true
+  nodeName: gke-concourse-kube-clust-default-pool-e2aa9ae4-w9zh
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    fsGroup: 1001
+  serviceAccount: default
+  serviceAccountName: default
+  subdomain: bala-concourse-postgresql-headless
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-bala-concourse-postgresql-0
+  - name: default-token-s5hvq
+    secret:
+      defaultMode: 420
+      secretName: default-token-s5hvq
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:30:03Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:30:15Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:30:15Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:29:51Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://ee941685004c1b83b072d615adb1d7fd5ee471c3f8bde802bfbf6da5f998df86
+    image: bitnami/postgresql:11.3.0-debian-9-r38
+    imageID: docker-pullable://bitnami/postgresql@sha256:0641cf60734a9cfa30e8b6debebd716bf69498aa68ed4efcfb7912e45c18766c
+    lastState: {}
+    name: bala-concourse-postgresql
+    ready: true
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2020-03-06T20:30:03Z"
+  hostIP: 10.128.0.49
+  initContainerStatuses:
+  - containerID: docker://4b50e9ccfcdc6cb177be1c62a1a64cf0cb6d58270893badfd661340c945c1185
+    image: bitnami/minideb:latest
+    imageID: docker-pullable://bitnami/minideb@sha256:2f430acaa0ffd88454ac330a6843840f1e1204007bf92f8ce7b654fd3b558d68
+    lastState: {}
+    name: init-chmod-data
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: docker://4b50e9ccfcdc6cb177be1c62a1a64cf0cb6d58270893badfd661340c945c1185
+        exitCode: 0
+        finishedAt: "2020-03-06T20:30:02Z"
+        reason: Completed
+        startedAt: "2020-03-06T20:30:02Z"
+  phase: Running
+  podIP: 10.48.2.6
+  qosClass: Burstable
+  startTime: "2020-03-06T20:29:51Z"

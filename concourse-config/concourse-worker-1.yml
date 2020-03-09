@@ -1,0 +1,250 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubernetes.io/limit-ranger: 'LimitRanger plugin set: cpu request for init container
+      bala-concourse-worker-init-rm'
+  creationTimestamp: "2020-03-06T20:29:47Z"
+  generateName: bala-concourse-worker-
+  labels:
+    app: bala-concourse-worker
+    controller-revision-hash: bala-concourse-worker-878547799
+    release: bala-concourse
+    statefulset.kubernetes.io/pod-name: bala-concourse-worker-1
+  name: bala-concourse-worker-1
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: bala-concourse-worker
+    uid: 38c71665-5fe9-11ea-b157-42010a80011d
+  resourceVersion: "13497"
+  selfLink: /api/v1/namespaces/default/pods/bala-concourse-worker-1
+  uid: 38f4acd5-5fe9-11ea-b157-42010a80011d
+spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: bala-concourse-worker
+              release: bala-concourse
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  containers:
+  - args:
+    - worker
+    env:
+    - name: CONCOURSE_SWEEP_INTERVAL
+      value: 30s
+    - name: CONCOURSE_CONNECTION_DRAIN_TIMEOUT
+      value: 1h
+    - name: CONCOURSE_HEALTHCHECK_BIND_IP
+      value: 0.0.0.0
+    - name: CONCOURSE_HEALTHCHECK_BIND_PORT
+      value: "8888"
+    - name: CONCOURSE_HEALTHCHECK_TIMEOUT
+      value: 5s
+    - name: CONCOURSE_DEBUG_BIND_IP
+      value: 127.0.0.1
+    - name: CONCOURSE_DEBUG_BIND_PORT
+      value: "7776"
+    - name: CONCOURSE_WORK_DIR
+      value: /concourse-work-dir
+    - name: CONCOURSE_BIND_IP
+      value: 127.0.0.1
+    - name: CONCOURSE_BIND_PORT
+      value: "7777"
+    - name: CONCOURSE_LOG_LEVEL
+      value: info
+    - name: CONCOURSE_TSA_HOST
+      value: bala-concourse-web:2222
+    - name: CONCOURSE_TSA_PUBLIC_KEY
+      value: /concourse-keys/host_key.pub
+    - name: CONCOURSE_TSA_WORKER_PRIVATE_KEY
+      value: /concourse-keys/worker_key
+    - name: CONCOURSE_GARDEN_BIN
+      value: gdn
+    - name: CONCOURSE_BAGGAGECLAIM_LOG_LEVEL
+      value: info
+    - name: CONCOURSE_BAGGAGECLAIM_BIND_IP
+      value: 127.0.0.1
+    - name: CONCOURSE_BAGGAGECLAIM_BIND_PORT
+      value: "7788"
+    - name: CONCOURSE_BAGGAGECLAIM_DEBUG_BIND_IP
+      value: 127.0.0.1
+    - name: CONCOURSE_BAGGAGECLAIM_DEBUG_BIND_PORT
+      value: "7787"
+    - name: CONCOURSE_BAGGAGECLAIM_DRIVER
+      value: naive
+    - name: CONCOURSE_BAGGAGECLAIM_BTRFS_BIN
+      value: btrfs
+    - name: CONCOURSE_BAGGAGECLAIM_MKFS_BIN
+      value: mkfs.btrfs
+    - name: CONCOURSE_VOLUME_SWEEPER_MAX_IN_FLIGHT
+      value: "5"
+    - name: CONCOURSE_CONTAINER_SWEEPER_MAX_IN_FLIGHT
+      value: "5"
+    image: concourse/concourse:5.6.0
+    imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - /bin/bash
+          - /pre-stop-hook.sh
+    livenessProbe:
+      failureThreshold: 5
+      httpGet:
+        path: /
+        port: worker-hc
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 15
+      successThreshold: 1
+      timeoutSeconds: 3
+    name: bala-concourse-worker
+    ports:
+    - containerPort: 8888
+      name: worker-hc
+      protocol: TCP
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+    securityContext:
+      privileged: true
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /concourse-keys
+      name: concourse-keys
+      readOnly: true
+    - mountPath: /concourse-work-dir
+      name: concourse-work-dir
+    - mountPath: /pre-stop-hook.sh
+      name: pre-stop-hook
+      subPath: pre-stop-hook.sh
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: bala-concourse-worker-token-sh2n5
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  hostname: bala-concourse-worker-1
+  initContainers:
+  - args:
+    - -ce
+    - |-
+      for v in $((btrfs subvolume list --sort=-ogen "/concourse-work-dir" || true) | awk '{print $9}'); do
+        (btrfs subvolume show "/concourse-work-dir/$v" && btrfs subvolume delete "/concourse-work-dir/$v") || true
+      done
+      rm -rf "/concourse-work-dir"/*
+    command:
+    - /bin/bash
+    image: concourse/concourse:5.6.0
+    imagePullPolicy: IfNotPresent
+    name: bala-concourse-worker-init-rm
+    resources:
+      requests:
+        cpu: 100m
+    securityContext:
+      privileged: true
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /concourse-work-dir
+      name: concourse-work-dir
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: bala-concourse-worker-token-sh2n5
+      readOnly: true
+  nodeName: gke-concourse-kube-clust-default-pool-e2aa9ae4-knl7
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: bala-concourse-worker
+  serviceAccountName: bala-concourse-worker
+  subdomain: bala-concourse-worker
+  terminationGracePeriodSeconds: 60
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: concourse-work-dir
+    persistentVolumeClaim:
+      claimName: concourse-work-dir-bala-concourse-worker-1
+  - configMap:
+      defaultMode: 420
+      name: bala-concourse-worker
+    name: pre-stop-hook
+  - name: concourse-keys
+    secret:
+      defaultMode: 256
+      items:
+      - key: host-key-pub
+        path: host_key.pub
+      - key: worker-key
+        path: worker_key
+      secretName: bala-concourse-worker
+  - name: bala-concourse-worker-token-sh2n5
+    secret:
+      defaultMode: 420
+      secretName: bala-concourse-worker-token-sh2n5
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:30:05Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:30:06Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:30:06Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-06T20:29:52Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://d52895a7b05ac6cfff77c1f93eb5b429cecef3e2673a597a4e409b222bcefec2
+    image: concourse/concourse:5.6.0
+    imageID: docker-pullable://concourse/concourse@sha256:32ff2e4bf9b4840ae58eb63874d83a25b991db5015b5652b1dac02dd97280d0f
+    lastState: {}
+    name: bala-concourse-worker
+    ready: true
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2020-03-06T20:30:05Z"
+  hostIP: 10.128.0.47
+  initContainerStatuses:
+  - containerID: docker://1c054c7c607616c12b255a71353bcb8f4ecea803790d7f9fe5436949ff54a1dc
+    image: concourse/concourse:5.6.0
+    imageID: docker-pullable://concourse/concourse@sha256:32ff2e4bf9b4840ae58eb63874d83a25b991db5015b5652b1dac02dd97280d0f
+    lastState: {}
+    name: bala-concourse-worker-init-rm
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: docker://1c054c7c607616c12b255a71353bcb8f4ecea803790d7f9fe5436949ff54a1dc
+        exitCode: 0
+        finishedAt: "2020-03-06T20:30:04Z"
+        reason: Completed
+        startedAt: "2020-03-06T20:30:04Z"
+  phase: Running
+  podIP: 10.48.0.8
+  qosClass: Burstable
+  startTime: "2020-03-06T20:29:52Z"

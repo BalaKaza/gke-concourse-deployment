@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bala-concourse-service
+  labels:
+    app: bala-concourse-service
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8080
+    name: atc
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: bala-concourse-web
+    release: bala-concourse
+  loadBalancerIP: 104.197.30.104
